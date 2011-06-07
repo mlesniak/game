@@ -1,0 +1,18 @@
+-- Todo                                                                       --
+- .cabal - file for dependency managament
+- how to handle game state?
+- load graphics
+- draw graphics
+
+
+-- Done                                                                       --
+X functional window.hs
+    X compile
+    X show a main window
+    X change viewport
+    X change window geometry
+    X Size in WindowConfig
+X separate main for testing    
+X primitive, fps-based gameloop
+
+
