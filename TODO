@@ -1,17 +1,14 @@
 -- Todo                                                                       --
 - .cabal - file for dependency managament
 - how to handle game state?
+
+O texture mapping in general
+    - understand graphics-drawingcombinators code
 - load graphics
 - draw graphics
 
 - Viewport in Window config
 
-O Input handling
-    X Keyhandler
-    O Mousehandler
-        X Click
-        O Drag
-        X Mousewheel
 
 -- Done                                                                       --
 X functional window.hs
@@ -23,4 +20,10 @@ X functional window.hs
 X separate main for testing    
 X primitive, fps-based gameloop
 
+X Input handling
+    X Keyhandler
+    X Mousehandler
+        X Click
+        X Drag
+        X Mousewheel
 
