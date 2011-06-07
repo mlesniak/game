@@ -12,6 +12,7 @@ module Window (
   , WindowConfig(..)
   , MouseButton
   , MouseHandler(..)
+  , MotionHandler(..)
   , Position(..)
 ) where
 
@@ -22,9 +23,19 @@ import Graphics.UI.GLUT hiding (Position)
 import qualified Graphics.UI.GLUT as GLUT
 
 
-newtype FrameHandler = FrameHandler { getFrame :: IO () }
-newtype KeyHandler   = KeyHandler { getKeyHandler :: Key -> KeyState -> Modifiers -> IO () }
-newtype MouseHandler = MouseHandler { getMouseHandler :: MouseButton -> Position -> IO () }
+newtype FrameHandler  = FrameHandler { getFrame :: IO () }
+
+newtype KeyHandler    = KeyHandler { 
+    getKeyHandler :: Key -> KeyState -> Modifiers -> IO () 
+}
+
+newtype MouseHandler  = MouseHandler { 
+    getMouseHandler :: MouseButton -> Position -> IO () 
+}
+
+newtype MotionHandler = MotionHandler { 
+    getMotionHandler :: Position -> IO () 
+}
 
 data Position = Position { 
     getPosition :: (GLdouble, GLdouble) 
@@ -32,12 +43,13 @@ data Position = Position {
 
 
 data WindowConfig = WindowConfig {
-    frameHandler :: FrameHandler
-  , keyHandler   :: Maybe KeyHandler
-  , mouseHandler :: Maybe MouseHandler
-  , title        :: String
-  , size         :: Size
-  , fps          :: Double
+    frameHandler  :: FrameHandler
+  , keyHandler    :: Maybe KeyHandler
+  , mouseHandler  :: Maybe MouseHandler
+  , motionHandler :: Maybe MotionHandler
+  , title         :: String
+  , size          :: Size
+  , fps           :: Double
 }
 
 
@@ -64,6 +76,7 @@ windowMain wc = do
     windowSize            $= size wc
     actionOnWindowClose   $= Exit
     keyboardMouseCallback $= Just (eventHandler wc)
+    motionCallback        $= Just (motionEventHandler wc)
 
     -- For antialiasing.
     lineSmooth            $= Enabled
@@ -105,13 +118,25 @@ eventHandler wc key state mods pos =
            case mouseHandler wc of
                Nothing -> return ()
                Just ha -> do
-                   let GLUT.Position i j = pos
-                       Size w h = size wc
-                       x        = 1.3 / fromIntegral w * fromIntegral i
-                       y        = 1.0 - 1.0 / fromIntegral h * fromIntegral j
-                   getMouseHandler ha b (Position (x, y))
+                   getMouseHandler ha b (windowToReal wc pos)
        _             -> 
            case keyHandler wc of
                Nothing -> return ()
                Just h  -> getKeyHandler h key state mods
+
+
+motionEventHandler :: WindowConfig -> GLUT.Position -> IO ()
+motionEventHandler wc pos = 
+   case motionHandler wc of
+       Nothing -> return ()
+       Just h  -> getMotionHandler h (windowToReal wc pos)
+
+
+windowToReal :: WindowConfig -> GLUT.Position -> Position
+windowToReal wc pos =
+    let GLUT.Position i j = pos
+        Size w h = size wc
+        x        = 1.3 / fromIntegral w * fromIntegral i
+        y        = 1.0 - 1.0 / fromIntegral h * fromIntegral j in
+    Position (x,y)
 

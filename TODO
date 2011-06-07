@@ -9,9 +9,9 @@
 O Input handling
     X Keyhandler
     O Mousehandler
-        - Click
-        - Drag
-        - Mousewheel
+        X Click
+        O Drag
+        X Mousewheel
 
 -- Done                                                                       --
 X functional window.hs

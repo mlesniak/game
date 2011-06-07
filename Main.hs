@@ -49,6 +49,10 @@ main = do
                     print (getPosition pos)
                 _          -> return ()
 
+        -- MOUSE (DRAGGING)
+      , motionHandler = Just $ MotionHandler $ \pos ->
+            print (getPosition pos)
+
       , title        = "Colors"
       , size         = Size 640 480
       , fps          = 120
