@@ -4,6 +4,14 @@
 - load graphics
 - draw graphics
 
+- Viewport in Window config
+
+O Input handling
+    X Keyhandler
+    O Mousehandler
+        - Click
+        - Drag
+        - Mousewheel
 
 -- Done                                                                       --
 X functional window.hs

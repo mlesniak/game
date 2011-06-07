@@ -1,7 +1,16 @@
 -- | An OpenGL based game loop.
 --
 
-module Window where
+module Window (
+    window
+  , windowLoop
+  , FrameHandler(..)
+  , KeyHandler(..)
+  , Key(..)
+  , KeyState
+  , Modifiers
+  , WindowConfig(..)
+) where
 
 import Control.Concurrent
 import Control.Monad
@@ -10,7 +19,7 @@ import Graphics.UI.GLUT
 
 
 newtype FrameHandler = FrameHandler { getFrame :: IO () }
-newtype KeyHandler   = KeyHandler (Key -> IO ())
+newtype KeyHandler   = KeyHandler { getKeyHandler :: Key -> KeyState -> Modifiers -> IO () }
 
 
 data WindowConfig = WindowConfig {
@@ -43,8 +52,8 @@ windowMain wc = do
     initialDisplayMode    $= [DoubleBuffered]
     clearColor            $= Color4 1 1 (1 :: GLclampf) 1
     windowSize            $= size wc
-    keyboardMouseCallback $= Nothing
     actionOnWindowClose   $= Exit
+    keyboardMouseCallback $= Just (eventHandler wc)
 
     -- For antialiasing.
     lineSmooth            $= Enabled
@@ -78,5 +87,13 @@ gameLoop fps_ = loop
         getTime = (fromRational . toRational) `fmap` getPOSIXTime
 
 
-
+eventHandler :: WindowConfig -> Key -> KeyState -> Modifiers -> Position 
+  -> IO ()
+eventHandler wc key state mods pos = do
+    case key of
+       MouseButton _ -> undefined
+       _             -> 
+           case keyHandler wc of
+               Nothing -> return ()
+               Just h  -> (getKeyHandler h) key state mods
 

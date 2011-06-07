@@ -33,10 +33,15 @@ main = do
                   , (1.30, 1.30)
                   , (0.00, 1.30)]
                 
-      , keyHandler   = Nothing
+      , keyHandler   = Just $ KeyHandler $ \key state _ -> 
+            when (state == Down) $ do
+            case key of
+                Char 'c'   -> writeIORef list []
+                Char '\27' -> leaveMainLoop
+                _        -> return ()
       , title        = "Colors"
       , size         = Size 640 480
-      , fps          = 30
+      , fps          = 120
     }
     windowLoop wc
 
