@@ -10,21 +10,31 @@ module Window (
   , KeyState
   , Modifiers
   , WindowConfig(..)
+  , MouseButton
+  , MouseHandler(..)
+  , Position(..)
 ) where
 
 import Control.Concurrent
 import Control.Monad
 import Data.Time.Clock.POSIX (getPOSIXTime)
-import Graphics.UI.GLUT 
+import Graphics.UI.GLUT hiding (Position)
+import qualified Graphics.UI.GLUT as GLUT
 
 
 newtype FrameHandler = FrameHandler { getFrame :: IO () }
 newtype KeyHandler   = KeyHandler { getKeyHandler :: Key -> KeyState -> Modifiers -> IO () }
+newtype MouseHandler = MouseHandler { getMouseHandler :: MouseButton -> Position -> IO () }
+
+data Position = Position { 
+    getPosition :: (GLdouble, GLdouble) 
+} deriving (Show, Eq)
 
 
 data WindowConfig = WindowConfig {
     frameHandler :: FrameHandler
   , keyHandler   :: Maybe KeyHandler
+  , mouseHandler :: Maybe MouseHandler
   , title        :: String
   , size         :: Size
   , fps          :: Double
@@ -87,13 +97,21 @@ gameLoop fps_ = loop
         getTime = (fromRational . toRational) `fmap` getPOSIXTime
 
 
-eventHandler :: WindowConfig -> Key -> KeyState -> Modifiers -> Position 
+eventHandler :: WindowConfig -> Key -> KeyState -> Modifiers -> GLUT.Position 
   -> IO ()
-eventHandler wc key state mods pos = do
+eventHandler wc key state mods pos =
     case key of
-       MouseButton _ -> undefined
+       MouseButton b ->
+           case mouseHandler wc of
+               Nothing -> return ()
+               Just ha -> do
+                   let GLUT.Position i j = pos
+                       Size w h = size wc
+                       x        = 1.3 / fromIntegral w * fromIntegral i
+                       y        = 1.0 - 1.0 / fromIntegral h * fromIntegral j
+                   getMouseHandler ha b (Position (x, y))
        _             -> 
            case keyHandler wc of
                Nothing -> return ()
-               Just h  -> (getKeyHandler h) key state mods
+               Just h  -> getKeyHandler h key state mods
 

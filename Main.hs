@@ -12,6 +12,7 @@ main :: IO ()
 main = do
     list <- newIORef []
     let wc = WindowConfig {
+        -- FRAME
         frameHandler = FrameHandler $ do
             pNew <- randomPoint (0, 1.3)
             modifyIORef list (pNew:) 
@@ -32,13 +33,22 @@ main = do
                   , (1.30, 0.00)
                   , (1.30, 1.30)
                   , (0.00, 1.30)]
-                
+
+        -- KEY
       , keyHandler   = Just $ KeyHandler $ \key state _ -> 
-            when (state == Down) $ do
+            when (state == Down) $
             case key of
                 Char 'c'   -> writeIORef list []
                 Char '\27' -> leaveMainLoop
                 _        -> return ()
+
+        -- MOUSE (CLICKING)
+      , mouseHandler = Just $ MouseHandler $ \button pos ->
+            case button of
+                LeftButton ->
+                    print (getPosition pos)
+                _          -> return ()
+
       , title        = "Colors"
       , size         = Size 640 480
       , fps          = 120
