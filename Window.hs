@@ -105,7 +105,7 @@ windowMain wc = do
         clear [ColorBuffer]
         loadIdentity
         translate $ Vector3 (-1.0) (-1.0) (0.0 :: GLfloat) 
-        scale (2/1.3) (2/1.3) (1.0 :: GLfloat)
+        scale (2/1.3) (2/1.0) (1.0 :: GLfloat)
         getFrame (frameHandler wc)
         swapBuffers
  
