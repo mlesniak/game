@@ -12,6 +12,7 @@ main :: IO ()
 main = do
     list <- newIORef []
     book <- loadImage "book.png"
+    font <- openFont "ubuntu.ttf"
     let wc = WindowConfig {
         -- FRAME
         frameHandler = FrameHandler $ do
@@ -32,6 +33,11 @@ main = do
 
             color $ Color3 0 1 (1 :: GLdouble)
             text (0.65, 0.95) (map show [(1 :: Int)..10])
+            
+            color $ Color3 0 0 (0 :: GLdouble)
+            preservingMatrix $ do
+                translate $ Vector3 (0.25 :: GLdouble) 0.75 0.0
+                textTTF font "Ubuntu!"
 
             -- Rectangle
             color $ Color3 1 0 (0 :: GLdouble)

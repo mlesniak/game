@@ -18,6 +18,8 @@ module Window (
   , loadImage
   , drawImage
   , text
+  , openFont
+  , textTTF
 ) where
 
 import Control.Concurrent
@@ -25,7 +27,8 @@ import Control.Monad
 import Data.Bitmap.OpenGL
 import Data.IORef
 import Data.Time.Clock.POSIX (getPOSIXTime)
-import Graphics.UI.GLUT hiding (Position)
+import Graphics.Rendering.FTGL
+import Graphics.UI.GLUT hiding (Position, Font)
 import qualified Codec.Image.STB as Image
 import qualified Graphics.UI.GLUT as GLUT
 
@@ -228,8 +231,22 @@ text (x,y) ss' = do
     render (fs / fromIntegral wh) y ss'
   where render _ _ []      = return ()
         render h y' (s:ss) = do
-            print y'
             rasterPos $ Vertex3 x y' 0.0
             renderString Fixed8By13 s
             render h (y'-h) ss
-        
+
+
+openFont :: String -> IO Font
+openFont path = do
+    font <- createPolygonFont path
+    _ <- setFontFaceSize font 96 96 
+    return font
+
+
+textTTF :: Font -> String -> IO ()
+textTTF font str = do
+    let f = 1/1000.0 :: GLdouble
+    scale f f 1
+    renderFont font str All
+
+
