@@ -29,7 +29,10 @@ main = do
                     vertex $ Vertex3 0.65 (0.65 :: GLfloat) 0.0
                     vertex $ Vertex3 x y 0.0
             -}
-            
+
+            color $ Color3 0 1 (1 :: GLdouble)
+            text (0.65, 0.95) (map show [(1 :: Int)..10])
+
             -- Rectangle
             color $ Color3 1 0 (0 :: GLdouble)
             renderPrimitive LineLoop $ do
@@ -37,8 +40,8 @@ main = do
                 mapM_ f [
                     (0.00, 0.00)
                   , (1.30, 0.00)
-                  , (1.30, 1.30)
-                  , (0.00, 1.30)]
+                  , (1.30, 1.00)
+                  , (0.00, 1.00)]
 
         -- KEY
       , keyHandler   = Just $ KeyHandler $ \key state _ -> 

@@ -17,6 +17,7 @@ module Window (
   , Image(..)
   , loadImage
   , drawImage
+  , text
 ) where
 
 import Control.Concurrent
@@ -218,3 +219,17 @@ drawImage (Image obj path) = do
         toVertex (x,y) = vertex $ Vertex2 x y
 
 
+text :: (GLfloat, GLfloat) -> [String] -> IO ()
+text (x,y) ss' = do
+    -- Handle different window sizes correctly by calculating the space between
+    -- subsequent lines:
+    Size _ wh <- get windowSize
+    fs        <- (*1.5) `liftM` fontHeight Fixed9By15
+    render (fs / fromIntegral wh) y ss'
+  where render _ _ []      = return ()
+        render h y' (s:ss) = do
+            print y'
+            rasterPos $ Vertex3 x y' 0.0
+            renderString Fixed8By13 s
+            render h (y'-h) ss
+        
