@@ -104,7 +104,6 @@ windowMain wc = do
     blendFunc             $= (SrcAlpha, OneMinusSrcAlpha)
 
     -- Viewport is currently constant.
-    --book <- G.openSprite "spock.jpg"
     displayCallback $= do
         clear [ColorBuffer]
         loadIdentity
@@ -139,8 +138,7 @@ eventHandler wc key state mods pos =
        MouseButton b ->
            case mouseHandler wc of
                Nothing -> return ()
-               Just ha -> do
-                   getMouseHandler ha b (windowToReal wc pos)
+               Just ha -> getMouseHandler ha b (windowToReal wc pos)
        _             -> 
            case keyHandler wc of
                Nothing -> return ()
@@ -169,7 +167,7 @@ windowToReal wc pos =
 loadImage :: FilePath -> IO Image
 loadImage path = do
     img <- newIORef Nothing
-    return $ Image {
+    return Image {
         getImage  = img
       , imagePath = path
     }
@@ -202,7 +200,7 @@ drawImage (Image obj path) = do
             return i
         Just o  -> return o
 
-    -- Old texture binding is lost (we never need it).
+    old <- get (textureBinding Texture2D)
     textureBinding Texture2D $= Just tobj
     renderPrimitive Quads $ do
         texcoord (   0, 0)
@@ -216,6 +214,7 @@ drawImage (Image obj path) = do
         
         texcoord (   0, 1)
         toVertex (   0, 0)
+    textureBinding Texture2D $= old
   where texcoord :: (GLdouble, GLdouble) -> IO ()
         texcoord (x,y) = texCoord $ TexCoord2 x y
         toVertex :: (GLdouble, GLdouble) -> IO () 
