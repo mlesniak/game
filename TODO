@@ -1,6 +1,7 @@
 -- Todo                                                                       --
-- .cabal - file for dependency managament
+- think about a concrete game idea... :)
 - how to handle game state?
+
 
 -- Done                                                                       --
 X functional window.hs
@@ -31,4 +32,4 @@ X Fonts
     X implement own font handling
 
 X simple book graphic rotation.
-
+X .cabal - file for dependency managament

@@ -1,0 +1,36 @@
+Name:                game
+Version:             0.1
+Synopsis:            Game prototype(s)
+Description: 
+  Experimental game prototypes, both technical and game-wise.
+Homepage:            https://github.com/mlesniak/game
+License:             GPL-3
+License-file:        LICENSE
+Author:              Michael Lesniak
+Maintainer:          michael.lesniak@gmail.com
+Category:            Game
+Build-type:          Simple
+Cabal-version:       >=1.6
+Extra-source-files: 
+  book.png, 
+  ubuntu.ttf,
+  TODO
+
+source-repository head
+  type:     git
+  location: https://github.com/mlesniak/game
+
+
+Executable game
+  Main-is: Main.hs            
+  ghc-options: -threaded -Wall -fno-warn-unused-do-bind
+  Build-depends: 
+      base          == 4.*
+    , GLUT          == 2.2.2.0
+    , stb-image     == 0.2
+    , FTGL          == 1.333
+    , time          == 1.2.0.3
+    , bitmap-opengl == 0.0.0
+    , random        == 1.0.0.3
+  other-modules: 
+    Window
