@@ -2,7 +2,6 @@
 - .cabal - file for dependency managament
 - how to handle game state?
 
-
 -- Done                                                                       --
 X functional window.hs
     X compile
@@ -31,4 +30,5 @@ X Fonts
     X understand graphics-drawingcombinators
     X implement own font handling
 
+X simple book graphic rotation.
 

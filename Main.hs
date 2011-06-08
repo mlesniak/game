@@ -10,31 +10,29 @@ import Window
 
 main :: IO ()
 main = do
-    list <- newIORef []
+    deg  <- newIORef (0.0 :: GLdouble)
     book <- loadImage "book.png"
     font <- openFont "ubuntu.ttf"
+    list <- newIORef []
     let wc = WindowConfig {
         -- FRAME
         frameHandler = FrameHandler $ do
-            color $ Color3 1 1 (1 :: GLdouble)
-            drawImage book
-            {-
+            -- Lines
             pNew <- randomPoint (0, 1.3)
             modifyIORef list (pNew:) 
             l <- readIORef list
             when (length l `mod` 100 == 0) $
                 putStrLn $ "Number of lines: " ++ show (length l)
             forM_ l $ \(x,y) -> do 
-                color $ Color3 (abs x) (abs y) (abs $ x-y)
+                color $ Color3 x y (x-y)
                 renderPrimitive Lines $ do
-                    vertex $ Vertex3 0.65 (0.65 :: GLfloat) 0.0
+                    vertex $ Vertex3 0.65 (0.5 :: GLfloat) 0.0
                     vertex $ Vertex3 x y 0.0
-            -}
 
-            color $ Color3 0 1 (1 :: GLdouble)
-            text (0.65, 0.95) (map show [(1 :: Int)..10])
-            
+
+            -- Text
             color $ Color3 0 0 (0 :: GLdouble)
+            text (0.65, 0.95) (map show [(1 :: Int)..10])
             preservingMatrix $ do
                 translate $ Vector3 (0.25 :: GLdouble) 0.75 0.0
                 textTTF font "Ubuntu!"
@@ -48,6 +46,18 @@ main = do
                   , (1.30, 0.00)
                   , (1.30, 1.00)
                   , (0.00, 1.00)]
+
+            -- Picture
+            color $ Color4 1 1 (1 :: GLdouble) 1
+            preservingMatrix $ do
+                d <- readIORef deg
+                let d' = if d > 350 then 0 else d + 10.0
+                writeIORef deg d'
+                translate $ Vector3 (0.65 :: GLdouble) 0.5 0.0
+                rotate d $ Vector3 (0.3 :: GLdouble) 0.5 0.2
+                scale (0.25 :: GLdouble) 0.25 0.0
+                translate $ Vector3 (-0.65 :: GLdouble) (-0.5) 0.0
+                drawImage book
 
         -- KEY
       , keyHandler   = Just $ KeyHandler $ \key state _ -> 
