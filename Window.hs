@@ -14,14 +14,25 @@ module Window (
   , MouseHandler(..)
   , MotionHandler(..)
   , Position(..)
+  , Image(..)
+  , loadImage
+  , drawImage
 ) where
 
 import Control.Concurrent
 import Control.Monad
+import Data.Bitmap.OpenGL
+import Data.IORef
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import Graphics.UI.GLUT hiding (Position)
+import qualified Codec.Image.STB as Image
 import qualified Graphics.UI.GLUT as GLUT
 
+
+data Image = Image { 
+    getImage  :: IORef (Maybe TextureObject)
+  , imagePath :: FilePath
+}
 
 newtype FrameHandler  = FrameHandler { getFrame :: IO () }
 
@@ -82,7 +93,14 @@ windowMain wc = do
     lineSmooth            $= Enabled
     lineWidth             $= 3.5
     hint LineSmooth       $= Nicest
+    
+    -- For texturing.
+    texture Texture2D     $= Enabled
+    blend                 $= Enabled
+    blendFunc             $= (SrcAlpha, OneMinusSrcAlpha)
 
+    -- Viewport is currently constant.
+    --book <- G.openSprite "spock.jpg"
     displayCallback $= do
         clear [ColorBuffer]
         loadIdentity
@@ -90,7 +108,7 @@ windowMain wc = do
         scale (2/1.3) (2/1.3) (1.0 :: GLfloat)
         getFrame (frameHandler wc)
         swapBuffers
-
+ 
     gameLoop (fps wc)
     mainLoop
 
@@ -139,4 +157,64 @@ windowToReal wc pos =
         x        = 1.3 / fromIntegral w * fromIntegral i
         y        = 1.0 - 1.0 / fromIntegral h * fromIntegral j in
     Position (x,y)
+
+
+-- | Dummy image loading. 
+--
+-- We delay real loading until the image is drawn.
+loadImage :: FilePath -> IO Image
+loadImage path = do
+    img <- newIORef Nothing
+    return $ Image {
+        getImage  = img
+      , imagePath = path
+    }
+
+
+-- | Load an image from disk.
+--
+-- First, decode the image format. Convert it to an OpenGL texture.
+loadImage' :: FilePath -> IO TextureObject
+loadImage' path = do
+    img <- Image.loadImage path
+    case img of
+        Left msg -> error $ "Unable to load image " ++ path ++ ": " ++ msg
+        Right i  -> makeSimpleBitmapTexture i
+
+
+-- | Draw an Image on a Quad.
+--
+-- Quad has the dimension (0,0) .. (1,1), without scaling and translation.
+-- z-plane is 0.0. This function is only useful for 2D graphics.
+drawImage :: Image -> IO ()
+drawImage (Image obj path) = do
+    -- Dynamically load the image, if it has not yet been used. We need this
+    -- approach to load the image in the correct OpenGL thread.
+    img <- readIORef obj
+    tobj <- case img of
+        Nothing -> do 
+            i <- loadImage' path
+            writeIORef obj (Just i)
+            return i
+        Just o  -> return o
+
+    -- Old texture binding is lost (we never need it).
+    textureBinding Texture2D $= Just tobj
+    renderPrimitive Quads $ do
+        texcoord (   0, 0)
+        toVertex (   0, 1)
+
+        texcoord ( 1  , 0)
+        toVertex ( 1.3, 1)
+        
+        texcoord ( 1  , 1)
+        toVertex ( 1.3, 0)
+        
+        texcoord (   0, 1)
+        toVertex (   0, 0)
+  where texcoord :: (GLdouble, GLdouble) -> IO ()
+        texcoord (x,y) = texCoord $ TexCoord2 x y
+        toVertex :: (GLdouble, GLdouble) -> IO () 
+        toVertex (x,y) = vertex $ Vertex2 x y
+
 

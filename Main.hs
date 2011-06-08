@@ -11,9 +11,13 @@ import Window
 main :: IO ()
 main = do
     list <- newIORef []
+    book <- loadImage "book.png"
     let wc = WindowConfig {
         -- FRAME
         frameHandler = FrameHandler $ do
+            color $ Color3 1 1 (1 :: GLdouble)
+            drawImage book
+            {-
             pNew <- randomPoint (0, 1.3)
             modifyIORef list (pNew:) 
             l <- readIORef list
@@ -24,8 +28,10 @@ main = do
                 renderPrimitive Lines $ do
                     vertex $ Vertex3 0.65 (0.65 :: GLfloat) 0.0
                     vertex $ Vertex3 x y 0.0
+            -}
             
             -- Rectangle
+            color $ Color3 1 0 (0 :: GLdouble)
             renderPrimitive LineLoop $ do
                 let f (x,y) = vertex $ Vertex3 x (y :: GLfloat) 0.0
                 mapM_ f [
@@ -55,7 +61,7 @@ main = do
 
       , title        = "Colors"
       , size         = Size 640 480
-      , fps          = 120
+      , fps          = 30
     }
     windowLoop wc
 

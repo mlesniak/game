@@ -2,12 +2,9 @@
 - .cabal - file for dependency managament
 - how to handle game state?
 
-O texture mapping in general
-    - understand graphics-drawingcombinators code
-- load graphics
-- draw graphics
-
-- Viewport in Window config
+- Fonts
+    - understand graphics-drawingcombinators
+    - implement own font handling
 
 
 -- Done                                                                       --
@@ -26,4 +23,12 @@ X Input handling
         X Click
         X Drag
         X Mousewheel
+
+X texture mapping in general
+    X understand graphics-drawingcombinators code
+X load graphics
+X draw graphics
+    X functions
+    X test program
+
 
