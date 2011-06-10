@@ -8,8 +8,8 @@ module Main where
 
 import Control.Concurrent
 import Control.Monad
-import Graphics.UI.GLUT hiding (position)
-import Physics.Hipmunk
+import Graphics.UI.GLUT hiding (position, Position)
+import Physics.Hipmunk hiding (Position)
 import Statistics
 import System.Random (randomRIO)
 import Unsafe.Coerce (unsafeCoerce)
@@ -32,6 +32,10 @@ main = do
                     ((1.29, 0.00), (1.29, 1.00)) ]
     mapM_ (border space) borders
 
+    -- Drag'n'Drop support. We store the object (actually, its shape) clicked
+    -- here until the user is finished (by releasing the mouse button).
+    drag <- newMVar Nothing
+
     -- Container for all balls.
     let numNew = 10
     balls <- newMVar []
@@ -43,6 +47,17 @@ main = do
         -- The FrameHandler is called for every frame, i.e. fps times per
         -- second.
         frameHandler = FrameHandler $ do
+            -- Handle Drag'n'Drop. I'm pretty sure this is not the best
+            -- solution, but it works for now.
+            v <- readMVar drag
+            case v of
+                Nothing    -> return ()
+                Just (b,p) -> do
+                    -- Reset velocity. Should we reset to the known velocity
+                    -- before the DnD?
+                    velocity b $= Vector 0 (0.0)
+                    position b $= p
+
             -- Draw borders in red. 
             color $ Color3 1 0 (0 :: GLdouble)
             renderPrimitive Lines $ 
@@ -74,8 +89,8 @@ main = do
                 Char '\27' -> leaveMainLoop
                 _          -> return ()
 
-      , mouseHandler  = Nothing
-      , motionHandler = Nothing
+      , mouseHandler  = Just $ MouseHandler (clickBall space drag)
+      , motionHandler = Just $ MotionHandler (moveBall space drag)
       , title         = "Ball simulation with Chipmunk in Haskell"
       , size          = Size 640 480
       , fps           = 30
@@ -147,6 +162,36 @@ clearSpace space balls = do
     putMVar balls []
 
 
+-- Drag'n'Drop support                                                        --
+moveBall :: Space -> MVar (Maybe (Body, Vector)) -> Position -> IO ()
+moveBall space mv (Position pos) = do
+    v <- takeMVar mv
+    case v of
+        Nothing    -> putMVar mv Nothing
+        Just (b,_) -> do
+            putMVar mv $ Just (b, p2v pos)
+  where p2v (x,y) = Vector (unsafeCoerce x) (unsafeCoerce y)
+
+
+clickBall :: Space -> MVar (Maybe (Body, Vector)) -> MouseButton -> Position 
+  -> IO ()
+clickBall space mv b (Position pos) = do
+    v <- takeMVar mv
+    case v of
+        Nothing  -> do
+            shapes <- spaceQueryList space (p2v pos) (-1) 0
+            if null shapes 
+                then putMVar mv Nothing
+                else do
+                    let s = head shapes
+                        b = body s
+            
+                    putMVar mv (Just (b, p2v pos))
+        -- Something is already dragged, user has released the button.
+        Just (b,_) -> putMVar mv Nothing
+  where p2v (x,y) = Vector (unsafeCoerce x) (unsafeCoerce y)
+
+
 -- Helper functions                                                           --
 -- | Draws a circle in the given color with a black border.
 circle :: (CpFloat, CpFloat) -> CpFloat -> Color3 GLdouble -> IO ()
@@ -184,6 +229,7 @@ randomColor = do
     return (Color3 c1 c2 c3)
   where rndC :: IO (GLdouble)
         rndC = unsafeCoerce `liftM` (randomRIO (0, 1) :: IO Double)
+
 
 
 
