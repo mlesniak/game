@@ -83,7 +83,7 @@ drawFPS (FPS t s fpss) add = do
 
     -- Display textual information
     color $ Color3 0 0 (0 :: GLdouble)
-    let str = take 5 $ show (head values) ++ maybe [] (" " ++) add
+    let str = take 5 (show (head values)) ++ maybe [] (" " ++) add
     text (0.04, 0.75) [str]
 
 

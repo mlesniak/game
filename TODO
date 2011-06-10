@@ -9,25 +9,14 @@
     - correct scaling
     - translation
     - (collision detection?) -> chipmunk?
+    - event handling
+    - animation
 
-- Physics
-    X understand chipmunk design
-    X write a ball example
-    X FPS Graph
-    X clean code
-        X FPS graph to Statistics.hs
-        X Refactor wall generation
-        X Refactor ball generation
-        X general cleaning (comments, types, ...)
 
-    X move balls around using drag'n'drop
-        X find the correct object
-        X move it around as long as the user has it clicked.
-    - Remove warnings
-    - Run HLint
-    X simple help on-screen
-    - commit & push
+- Make it public?    
     - reddit?
+    - hackage
+    - haskell-cafe?
 
 
 -- Bugs                                                                       --
@@ -70,3 +59,29 @@ X Fonts
 
 X simple book graphic rotation.
 X .cabal - file for dependency managament
+
+X Physics
+    X understand chipmunk design
+    X write a ball example
+    X FPS Graph
+    X clean code
+        X FPS graph to Statistics.hs
+        X Refactor wall generation
+        X Refactor ball generation
+        X general cleaning (comments, types, ...)
+    X move balls around using drag'n'drop
+        X find the correct object
+        X move it around as long as the user has it clicked.
+    X Remove warnings
+    X Run HLint
+    X simple help on-screen
+    X commit & push
+
+-- Bugs fixed                                                                 --
+X Number of objects not shown anymore:
+  Brackets wrong after a misread hlint comment.
+
+
+
+  
+
