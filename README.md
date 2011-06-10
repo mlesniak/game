@@ -6,4 +6,13 @@ Haskell (probably using OpenGL and Chipmunk).  At the moment this repository
 contains the source for a demo of a box with balls, simulated with Chipmunk und
 visualized with OpenGL.
 
-![Screenshot](/screenshot.png "Screenshot")
+You can try the demo cloning or downloading the repository and typing
+
+    cabal configure
+    cabal build
+    ./dist/build/game/game
+
+Have fun!
+
+![Screenshot](https://github.com/mlesniak/game/blob/master/screenshot.png?raw=true "Screenshot")
+
