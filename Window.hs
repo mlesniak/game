@@ -1,5 +1,8 @@
 -- | An OpenGL based game loop.
 --
+-- Some ideas/code were taken from graphics-drawingcombinators (especially image
+-- loading and font handling).
+--
 
 module Window (
     window
@@ -20,6 +23,8 @@ module Window (
   , text
   , openFont
   , textTTF
+  , getTime
+  , toVertex
 ) where
 
 import Control.Concurrent
@@ -31,6 +36,7 @@ import Graphics.Rendering.FTGL
 import Graphics.UI.GLUT hiding (Position, Font)
 import qualified Codec.Image.STB as Image
 import qualified Graphics.UI.GLUT as GLUT
+import Unsafe.Coerce
 
 
 data Image = Image { 
@@ -85,7 +91,7 @@ windowMain :: WindowConfig -> IO ()
 windowMain wc = do
     getArgsAndInitialize
     createWindow (title wc)
-    perWindowKeyRepeat    $= PerWindowKeyRepeatOff
+    perWindowKeyRepeat    $= PerWindowKeyRepeatOn
     initialDisplayMode    $= [DoubleBuffered]
     clearColor            $= Color4 1 1 (1 :: GLclampf) 1
     windowSize            $= size wc
@@ -95,7 +101,7 @@ windowMain wc = do
 
     -- For antialiasing.
     lineSmooth            $= Enabled
-    lineWidth             $= 3.5
+    lineWidth             $= 1.5
     hint LineSmooth       $= Nicest
     
     -- For texturing.
@@ -127,8 +133,9 @@ gameLoop fps_ = loop
             if twait < 1/fps_ 
                 then addTimerCallback tdelay loop
                 else loop
-        getTime :: IO Double
-        getTime = (fromRational . toRational) `fmap` getPOSIXTime
+
+getTime :: IO Double
+getTime = (fromRational . toRational) `fmap` getPOSIXTime
 
 
 eventHandler :: WindowConfig -> Key -> KeyState -> Modifiers -> GLUT.Position 
@@ -217,8 +224,10 @@ drawImage (Image obj path) = do
     textureBinding Texture2D $= old
   where texcoord :: (GLdouble, GLdouble) -> IO ()
         texcoord (x,y) = texCoord $ TexCoord2 x y
-        toVertex :: (GLdouble, GLdouble) -> IO () 
-        toVertex (x,y) = vertex $ Vertex2 x y
+
+
+toVertex :: Num a => (a, a) -> IO () 
+toVertex (x,y) = vertex $ Vertex2 (unsafeCoerce x :: GLdouble) (unsafeCoerce y)
 
 
 text :: (GLfloat, GLfloat) -> [String] -> IO ()

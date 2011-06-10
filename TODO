@@ -1,6 +1,33 @@
 -- Todo                                                                       --
 - think about a concrete game idea... :)
+    - n-body fighting game
+    - shooter
+    - jump'n'run
 - how to handle game state?
+
+- Simple sprite engine
+    - correct scaling
+    - translation
+    - (collision detection?) -> chipmunk?
+
+- Physics
+    X understand chipmunk design
+    X write a ball example
+    X FPS Graph
+    X clean code
+        X FPS graph to Statistics.hs
+        X Refactor wall generation
+        X Refactor ball generation
+        X general cleaning (comments, types, ...)
+
+    - move balls around using drag'n'drop
+    - simple help on-screen
+    - commit & push
+    - reddit?
+
+-- Nice to have                                                               --
+- FPS module
+    - definable maximum range
 
 
 -- Done                                                                       --

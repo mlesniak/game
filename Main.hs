@@ -1,8 +1,16 @@
+-- | Simulation of balls using the Chipmunk library.
+--
+-- Regarding Chipmunk, ball and border are the important functions; and probably
+-- the call to step in line 63.
+--
+
 module Main where
 
+import Control.Concurrent
 import Control.Monad
-import Data.IORef
-import Graphics.UI.GLUT 
+import Graphics.UI.GLUT hiding (position)
+import Physics.Hipmunk
+import Statistics
 import System.Random (randomRIO)
 import Unsafe.Coerce (unsafeCoerce)
 import Window
@@ -10,85 +18,172 @@ import Window
 
 main :: IO ()
 main = do
-    deg  <- newIORef (0.0 :: GLdouble)
-    book <- loadImage "book.png"
-    font <- openFont "ubuntu.ttf"
-    list <- newIORef []
+    -- Physics intialization.
+    initChipmunk
+    space <- newSpace
+    gravity space $= Vector 0 (-1)
+
+    -- Enabling performance information display.
+    fpsStat <- newFPS
+  
+    -- Create outside borders.
+    let borders = [ ((0.01, 0.00), (1.29, 0.00)),
+                    ((0.01, 0.00), (0.01, 1.00)),
+                    ((1.29, 0.00), (1.29, 1.00)) ]
+    mapM_ (border space) borders
+
+    -- Container for all balls.
+    let numNew = 10
+    balls <- newMVar []
+    
+    -- The WindowConfig type is special for the underlying graphics system and
+    -- provides handlers for frame drawing, key and mouse events. It's not
+    -- important for the physic simulation.
     let wc = WindowConfig {
-        -- FRAME
+        -- The FrameHandler is called for every frame, i.e. fps times per
+        -- second.
         frameHandler = FrameHandler $ do
-            -- Lines
-            pNew <- randomPoint (0, 1.3)
-            modifyIORef list (pNew:) 
-            l <- readIORef list
-            when (length l `mod` 100 == 0) $
-                putStrLn $ "Number of lines: " ++ show (length l)
-            forM_ l $ \(x,y) -> do 
-                color $ Color3 x y (x-y)
-                renderPrimitive Lines $ do
-                    vertex $ Vertex3 0.65 (0.5 :: GLfloat) 0.0
-                    vertex $ Vertex3 x y 0.0
-
-
-            -- Text
-            color $ Color3 0 0 (0 :: GLdouble)
-            text (0.65, 0.95) (map show [(1 :: Int)..10])
-            preservingMatrix $ do
-                translate $ Vector3 (0.25 :: GLdouble) 0.75 0.0
-                textTTF font "Ubuntu!"
-
-            -- Rectangle
+            -- Draw borders in red. 
             color $ Color3 1 0 (0 :: GLdouble)
-            renderPrimitive LineLoop $ do
-                let f (x,y) = vertex $ Vertex3 x (y :: GLfloat) 0.0
-                mapM_ f [
-                    (0.00, 0.00)
-                  , (1.30, 0.00)
-                  , (1.30, 1.00)
-                  , (0.00, 1.00)]
+            renderPrimitive Lines $ 
+                forM_ borders $ \(s, e) -> do
+                    toVertex s
+                    toVertex e
 
-            -- Picture
-            color $ Color4 1 1 (1 :: GLdouble) 1
-            preservingMatrix $ do
-                d <- readIORef deg
-                let d' = if d > 350 then 0 else d + 10.0
-                writeIORef deg d'
-                translate $ Vector3 (0.65 :: GLdouble) 0.5 0.0
-                rotate d $ Vector3 (0.3 :: GLdouble) 0.5 0.2
-                scale (0.25 :: GLdouble) 0.25 0.0
-                translate $ Vector3 (-0.65 :: GLdouble) (-0.5) 0.0
-                drawImage book
+            -- Draw balls with their particular color.
+            bs <- readMVar balls
+            forM_ bs $ \(b, c, r) -> do
+                Vector x y <- get $ position (body b)
+                circle (x, y) r c
+            
+            -- Draw fps statistics, if enabled and calculate new position.
+            drawFPS fpsStat (Just $ "Objects: " ++ show (length bs))
 
-        -- KEY
-      , keyHandler   = Just $ KeyHandler $ \key state _ -> 
+            -- Physics-wise, this is the important step in the simulation which
+            -- recalculates the new positions of our objects.
+            step space (1.0 / (fps wc))
+
+        -- Key handling.
+      , keyHandler = Just $ KeyHandler $ \key state _ -> 
             when (state == Down) $
             case key of
-                Char 'c'   -> writeIORef list []
+                Char 'c'   -> clearSpace space balls
+                Char 'b'   -> replicateM_ numNew (newBall space balls)
+                Char 'v'   -> newBigBall space balls
+                Char 'f'   -> toggleFPS fpsStat
                 Char '\27' -> leaveMainLoop
-                _        -> return ()
-
-        -- MOUSE (CLICKING)
-      , mouseHandler = Just $ MouseHandler $ \button pos ->
-            case button of
-                LeftButton ->
-                    print (getPosition pos)
                 _          -> return ()
 
-        -- MOUSE (DRAGGING)
-      , motionHandler = Just $ MotionHandler $ \pos ->
-            print (getPosition pos)
-
-      , title        = "Colors"
-      , size         = Size 640 480
-      , fps          = 30
+      , mouseHandler  = Nothing
+      , motionHandler = Nothing
+      , title         = "Ball simulation with Chipmunk in Haskell"
+      , size          = Size 640 480
+      , fps           = 30
     }
     windowLoop wc
 
 
-randomPoint :: (Float, Float) -> IO (GLfloat, GLfloat)
+-- Object creation and removal, the important physics stuff                   --
+-- Storing the balls, i.e. their shape, color and radius.
+type Balls = MVar [(Shape, Color3 GLdouble, Double)]
+
+-- | Create an unmovable and blocking border.
+border :: Space -> ((Double, Double), (Double, Double)) -> IO ()
+border space ((x1,y1), (x2,y2)) = do
+    ground <- newBody infinity infinity
+    gshape <- newShape ground (LineSegment (Vector x1 y1) (Vector x2 y2) 0.01) 
+               (Vector 0.0 0.0)
+    position ground   $= Vector 0.0 0.00
+    elasticity gshape $= 0.5
+    friction gshape   $= 0.8
+    spaceAdd space (Static gshape)
+
+
+-- | Create a new ball with random velocity, position around 0.6 on the x-axis
+newBall :: Space -> Balls -> IO () 
+newBall space balls = do
+        x         <- randomRIO (0.5, 0.7) :: IO CpFloat
+        maxRadius <- randomRIO (0.01, 0.03) :: IO Double
+        rad       <- randomRIO (0.001, maxRadius) :: IO Double
+        vel       <- randomPoint (-0.8, 0.8)
+
+        ball space balls 100 (x, 0.7) vel rad   
+
+
+-- | Creates a new heavy ball.
+newBigBall :: Space -> Balls -> IO () 
+newBigBall space balls = ball space balls 100000 (0.65, 0.95) (0,0) 0.05
+
+
+-- | Creates a new ball with the given properties and add it to the space.
+--
+-- Physics-wise, this (and border above) are the important functions for
+-- simulating physically correct ball behaviour.
+ball :: Space -> Balls -> Mass -> (CpFloat, CpFloat) -> (CpFloat, CpFloat)
+  -> Double -> IO ()
+ball space balls m pos vel rad = do
+    -- Body.
+    c <- randomColor
+    b <- newBody m infinity
+    position b $= uncurry Vector pos
+    velocity b $= uncurry Vector vel
+    spaceAdd space b
+    
+    -- Shape.
+    bshape <- newShape b (Circle $ unsafeCoerce rad) (Vector 0 0)
+    elasticity bshape    $= 0.9
+    friction bshape      $= 0.1
+    spaceAdd space bshape
+
+    modifyMVar_ balls (\k -> return $ (bshape, c, rad):k)
+
+
+-- | Empties the space.
+clearSpace :: Space -> MVar [(Shape, t, t1)] -> IO ()
+clearSpace space balls = do
+    as <- takeMVar balls
+    mapM_ (\(k,_,_) -> spaceRemove space k) as
+    mapM_ (\(sh,_,_) -> spaceRemove space (body sh)) as
+    putMVar balls []
+
+
+-- Helper functions                                                           --
+-- | Draws a circle in the given color with a black border.
+circle :: (CpFloat, CpFloat) -> CpFloat -> Color3 GLdouble -> IO ()
+circle (x,y) r c = preservingMatrix $ do
+    let poly = 24
+        ang  = \p -> p * 2 * pi / poly
+        pos  = map (\p -> (x+cos(ang p)*r, y + sin(ang p)*r)) [1,2..poly]
+    color c
+    renderPrimitive Graphics.UI.GLUT.Polygon $
+        mapM_ (toVertex . conv) pos
+    color $ Color3 0 0 (0 :: GLdouble)
+    renderPrimitive Graphics.UI.GLUT.LineLoop $
+        mapM_ (toVertex . conv) pos
+  where conv :: (CpFloat, CpFloat) -> (GLdouble, GLdouble)
+        conv (a,b) = (unsafeCoerce a, unsafeCoerce b)
+
+
+-- | Returns a random point in the given range.
+--
+-- Returns the point in Chipmunk coordinates.
+randomPoint :: (Double, Double) -> IO (CpFloat, CpFloat)
 randomPoint (l, r) = do
-    x1 <- unsafeCoerce `liftM` randomRIO (l, r)
-    x2 <- unsafeCoerce `liftM` randomRIO (l, r)
+    -- Double == CpFloat in Chipmunk.
+    x1 <- unsafeCoerce `liftM` (randomRIO (l, r) :: IO Double)
+    x2 <- unsafeCoerce `liftM` (randomRIO (l, r) :: IO Double)
     return (x1, x2)
+
+
+-- | Returns a random color.
+randomColor :: IO (Color3 GLdouble)
+randomColor = do
+    c1 <- rndC
+    c2 <- rndC
+    c3 <- rndC
+    return (Color3 c1 c2 c3)
+  where rndC :: IO (GLdouble)
+        rndC = unsafeCoerce `liftM` (randomRIO (0, 1) :: IO Double)
+
 
 

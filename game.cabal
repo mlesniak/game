@@ -32,5 +32,8 @@ Executable game
     , time          == 1.2.0.3
     , bitmap-opengl == 0.0.0
     , random        == 1.0.0.3
+    , Hipmunk       == 5.2.0.2
+    , containers    == 0.3.0.0
   other-modules: 
-    Window
+      Window
+    , Statistics
