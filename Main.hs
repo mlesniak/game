@@ -47,6 +47,8 @@ main = do
         -- The FrameHandler is called for every frame, i.e. fps times per
         -- second.
         frameHandler = FrameHandler $ do
+            drawHelp
+
             -- Handle Drag'n'Drop. I'm pretty sure this is not the best
             -- solution, but it works for now.
             v <- readMVar drag
@@ -55,7 +57,7 @@ main = do
                 Just (b,p) -> do
                     -- Reset velocity. Should we reset to the known velocity
                     -- before the DnD?
-                    velocity b $= Vector 0 (0.0)
+                    velocity b $= Vector 0 0
                     position b $= p
 
             -- Draw borders in red. 
@@ -76,7 +78,7 @@ main = do
 
             -- Physics-wise, this is the important step in the simulation which
             -- recalculates the new positions of our objects.
-            step space (1.0 / (fps wc))
+            step space (1.0 / fps wc)
 
         -- Key handling.
       , keyHandler = Just $ KeyHandler $ \key state _ -> 
@@ -90,7 +92,7 @@ main = do
                 _          -> return ()
 
       , mouseHandler  = Just $ MouseHandler (clickBall space drag)
-      , motionHandler = Just $ MotionHandler (moveBall space drag)
+      , motionHandler = Just $ MotionHandler (moveBall drag)
       , title         = "Ball simulation with Chipmunk in Haskell"
       , size          = Size 640 480
       , fps           = 30
@@ -163,32 +165,29 @@ clearSpace space balls = do
 
 
 -- Drag'n'Drop support                                                        --
-moveBall :: Space -> MVar (Maybe (Body, Vector)) -> Position -> IO ()
-moveBall space mv (Position pos) = do
+moveBall :: MVar (Maybe (Body, Vector)) -> Position -> IO ()
+moveBall mv (Position pos) = do
     v <- takeMVar mv
     case v of
         Nothing    -> putMVar mv Nothing
-        Just (b,_) -> do
-            putMVar mv $ Just (b, p2v pos)
+        Just (b,_) -> putMVar mv $ Just (b, p2v pos)
   where p2v (x,y) = Vector (unsafeCoerce x) (unsafeCoerce y)
 
 
 clickBall :: Space -> MVar (Maybe (Body, Vector)) -> MouseButton -> Position 
   -> IO ()
-clickBall space mv b (Position pos) = do
+clickBall space mv _ (Position pos) = do
     v <- takeMVar mv
     case v of
-        Nothing  -> do
-            shapes <- spaceQueryList space (p2v pos) (-1) 0
-            if null shapes 
+        Nothing -> do
+            shs <- spaceQueryList space (p2v pos) (-1) 0
+            if null shs 
                 then putMVar mv Nothing
                 else do
-                    let s = head shapes
-                        b = body s
-            
+                    let b = body (head shs)
                     putMVar mv (Just (b, p2v pos))
         -- Something is already dragged, user has released the button.
-        Just (b,_) -> putMVar mv Nothing
+        Just _  -> putMVar mv Nothing
   where p2v (x,y) = Vector (unsafeCoerce x) (unsafeCoerce y)
 
 
@@ -196,9 +195,9 @@ clickBall space mv b (Position pos) = do
 -- | Draws a circle in the given color with a black border.
 circle :: (CpFloat, CpFloat) -> CpFloat -> Color3 GLdouble -> IO ()
 circle (x,y) r c = preservingMatrix $ do
-    let poly = 24
-        ang  = \p -> p * 2 * pi / poly
-        pos  = map (\p -> (x+cos(ang p)*r, y + sin(ang p)*r)) [1,2..poly]
+    let poly  = 24
+        ang p = p * 2 * pi / poly
+        pos   = map (\p -> (x+cos(ang p)*r, y + sin(ang p)*r)) [1,2..poly]
     color c
     renderPrimitive Graphics.UI.GLUT.Polygon $
         mapM_ (toVertex . conv) pos
@@ -227,9 +226,22 @@ randomColor = do
     c2 <- rndC
     c3 <- rndC
     return (Color3 c1 c2 c3)
-  where rndC :: IO (GLdouble)
+  where rndC :: IO GLdouble
         rndC = unsafeCoerce `liftM` (randomRIO (0, 1) :: IO Double)
 
 
+
+drawHelp :: IO ()
+drawHelp = do
+    color $ Color3 0 0 (0 :: GLdouble)
+    text (0.9, 0.97) [
+        "Keys:"
+      , "b      Spawn 10 balls"
+      , "v      Spawn 1 big ball"
+      , "c      clear box"
+      , "f      Toggle FPS graph"
+      , "Escape Quit"
+      , ""
+      , "Drag'n'Drop possible." ]
 
 

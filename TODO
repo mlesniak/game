@@ -23,9 +23,17 @@
     X move balls around using drag'n'drop
         X find the correct object
         X move it around as long as the user has it clicked.
-    - simple help on-screen
+    - Remove warnings
+    - Run HLint
+    X simple help on-screen
     - commit & push
     - reddit?
+
+
+-- Bugs                                                                       --
+- Since the walls are too thin, balls with large velocity pass through. Make the 
+  walls bigger.
+
 
 -- Nice to have                                                               --
 - FPS module

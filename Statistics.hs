@@ -11,14 +11,11 @@ module Statistics (
   , toggleFPS
 ) where
 
-import Data.Maybe
 import Control.Monad
 import Data.IORef
 import Graphics.UI.GLUT hiding (position)
-import System.Random (randomRIO)
 import Unsafe.Coerce (unsafeCoerce)
 import Window
-import Control.Concurrent
 
 
 data FPS = FPS {
@@ -45,6 +42,7 @@ newFPS = do
 -- | Shows the fps (if toggled) in a graph.
 --
 -- The additional string in add is shown directly after the FPS.
+drawFPS :: FPS -> Maybe String -> IO ()
 drawFPS (FPS t s fpss) add = do
     -- Should we display the graph at all?
     toShow <- readIORef s
@@ -57,20 +55,20 @@ drawFPS (FPS t s fpss) add = do
     writeIORef t tcur
     runs <- readIORef fpss
     let f' = take 59 runs
-    writeIORef fpss $ (unsafeCoerce $ 1/tdiff) : f'
+    writeIORef fpss $ unsafeCoerce (1/tdiff) : f'
 
     preservingMatrix $ do
     -- Move to upper left corner.
-    translate $ Vector3 (0.02 :: GLdouble) (0.89) (0.0)
+    translate $ Vector3 (0.02 :: GLdouble) 0.89 0.0
     Graphics.UI.GLUT.scale 0.5 0.1 (0.1 :: GLdouble)
 
     -- Draw black border.
     color $ Color3 0 0 (0 :: GLdouble)
     renderPrimitive LineLoop $ do
-        toVertex (0.0, 1)
-        toVertex (1.0, 1)
-        toVertex (1.0, 0)
-        toVertex (0.0, 0)
+        toVertex (0.0, 1 :: Double)
+        toVertex (1.0, 1 :: Double)
+        toVertex (1.0, 0 :: Double)
+        toVertex (0.0, 0 :: Double)
 
     -- Show values.
     values <- readIORef fpss
@@ -78,14 +76,14 @@ drawFPS (FPS t s fpss) add = do
     let steps  = 59.0
         dsteps = 1.0 / steps
     color $ Color3 1 0 (0 :: GLdouble)
-    renderPrimitive LineStrip $ do
+    renderPrimitive LineStrip $ 
         forM_ (zip [1.0,(1.0-dsteps)..0] values) $ \(x,y) -> do
             let b = (x, min (y/steps) 0.99)
             toVertex b
 
     -- Display textual information
     color $ Color3 0 0 (0 :: GLdouble)
-    let str = (take 5 $ show (head values)) ++ maybe [] (" " ++) add
+    let str = take 5 $ show (head values) ++ maybe [] (" " ++) add
     text (0.04, 0.75) [str]
 
 

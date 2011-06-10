@@ -211,16 +211,16 @@ drawImage (Image obj path) = do
     textureBinding Texture2D $= Just tobj
     renderPrimitive Quads $ do
         texcoord (   0, 0)
-        toVertex (   0, 1)
+        toVertex (   0, 1 :: Double)
 
         texcoord ( 1  , 0)
-        toVertex ( 1.3, 1)
+        toVertex ( 1.3, 1 :: Double)
         
         texcoord ( 1  , 1)
-        toVertex ( 1.3, 0)
+        toVertex ( 1.3, 0 :: Double)
         
         texcoord (   0, 1)
-        toVertex (   0, 0)
+        toVertex (   0, 0 :: Double)
     textureBinding Texture2D $= old
   where texcoord :: (GLdouble, GLdouble) -> IO ()
         texcoord (x,y) = texCoord $ TexCoord2 x y
@@ -235,7 +235,7 @@ text (x,y) ss' = do
     -- Handle different window sizes correctly by calculating the space between
     -- subsequent lines:
     Size _ wh <- get windowSize
-    fs        <- (*1.5) `liftM` fontHeight Fixed9By15
+    fs        <- (*1.0) `liftM` fontHeight Fixed9By15
     render (fs / fromIntegral wh) y ss'
   where render _ _ []      = return ()
         render h y' (s:ss) = do
