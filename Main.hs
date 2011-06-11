@@ -86,6 +86,10 @@ main = do
             case key of
                 Char 'c'   -> clearSpace space balls
                 Char 'b'   -> replicateM_ numNew (newBall space balls)
+                SpecialKey KeyLeft -> gravity space $= Vector (-0.7) (-0.7)
+                SpecialKey KeyDown -> gravity space $= Vector (-0.0) (-1)
+                SpecialKey KeyRight-> gravity space $= Vector ( 0.7) (-0.7)
+                SpecialKey KeyUp-> gravity space $= Vector 0 0.1 
                 Char 'v'   -> newBigBall space balls
                 Char 'f'   -> toggleFPS fpsStat
                 Char '\27' -> leaveMainLoop
@@ -238,6 +242,7 @@ drawHelp = do
         "Keys:"
       , "b      Spawn 10 balls"
       , "v      Spawn 1 big ball"
+      , "Arrows Gravity direction"
       , "c      clear box"
       , "f      Toggle FPS graph"
       , "Escape Quit"
