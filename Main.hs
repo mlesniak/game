@@ -8,7 +8,7 @@ module Main where
 
 import Control.Concurrent
 import Control.Monad
-import Graphics.UI.GLUT hiding (position, Position)
+import Graphics.UI.GLUT hiding (position, Position, scale)
 import Physics.Hipmunk hiding (Position)
 import Statistics
 import System.Random (randomRIO)
@@ -35,6 +35,7 @@ main = do
     -- Drag'n'Drop support. We store the object (actually, its shape) clicked
     -- here until the user is finished (by releasing the mouse button).
     drag <- newMVar Nothing
+    dragpos <- newMVar Nothing
 
     -- Container for all balls.
     let numNew = 10
@@ -47,6 +48,7 @@ main = do
         -- The FrameHandler is called for every frame, i.e. fps times per
         -- second.
         frameHandler = FrameHandler $ do
+            let fps' = fps wc
             drawHelp
 
             -- Handle Drag'n'Drop. I'm pretty sure this is not the best
@@ -57,7 +59,12 @@ main = do
                 Just (b,p) -> do
                     -- Reset velocity. Should we reset to the known velocity
                     -- before the DnD?
-                    velocity b $= Vector 0 0
+                    moldp <- takeMVar dragpos
+                    putMVar dragpos (Just p)
+                    let vel = case moldp of 
+                                Nothing   -> Vector 0 0
+                                Just oldp -> scale (p-oldp) fps'
+                    velocity b $= vel
                     position b $= p
 
             -- Draw borders in red. 
@@ -78,7 +85,7 @@ main = do
 
             -- Physics-wise, this is the important step in the simulation which
             -- recalculates the new positions of our objects.
-            step space (1.0 / fps wc)
+            step space (1.0/fps')
 
         -- Key handling.
       , keyHandler = Just $ KeyHandler $ \key state _ -> 
